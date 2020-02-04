@@ -1,14 +1,14 @@
 [
   {
-    "ParameterKey": "myKeyPair",
+    "ParameterKey": "toolKeyPair",
     "ParameterValue": "20191113-1"
   }, 
   {
-    "ParameterKey": "InstanceTypeParameter",
+    "ParameterKey": "toolInstanceType",
     "ParameterValue": "t2.micro"
   },
   {
-    "ParameterKey": "mySubnetIDs",
+    "ParameterKey": "toolSubnetIDs",
     "ParameterValue": "subnet-63abb31a"
   }
 ]
