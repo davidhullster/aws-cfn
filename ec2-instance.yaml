@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Resources:
-  MyEC2Instance: 
+  toolEC2Instance: 
     Type: AWS::EC2::Instance
     Properties: 
       ImageId: 
@@ -9,9 +9,9 @@ Resources:
           - Ref: "AWS::Region"
           - "AMI"
       InstanceType:
-        Ref: InstanceTypeParameter
+        Ref: toolInstanceType
       KeyName: 
-        Ref: myKeyPair
+        Ref: toolKeyPair
       BlockDeviceMappings:
       - DeviceName: "/dev/sdm"
         Ebs: 
@@ -21,14 +21,33 @@ Resources:
           VolumeSize: "20"
       - DeviceName: "/dev/sdk"
         NoDevice: {}
+  toolELB:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      AvailabilityZones:
+        - us-west-2a
+      Listeners:
+        - LoadBalancerPort: '80'
+          InstancePort: '80'
+          Protocol: HTTP
+  toolELBIngressGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ELB ingress group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          SourceSecurityGroupOwnerId: !GetAtt toolELB.SourceSecurityGroup.OwnerAlias
+          SourceSecurityGroupName: !GetAtt toolELB.SourceSecurityGroup.GroupName
 Parameters:  
-  myKeyPair: 
+  toolKeyPair: 
     Description: Amazon EC2 Key Pair
     Type: "AWS::EC2::KeyPair::KeyName"
-  mySubnetIDs: 
+  toolSubnetIDs: 
     Description: Subnet IDs
     Type: "List<AWS::EC2::Subnet::Id>"
-  InstanceTypeParameter: 
+  toolInstanceType: 
     Type: String
     Default: t2.micro
     AllowedValues: 
