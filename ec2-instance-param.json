@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "myKeyPair",
+    "ParameterValue": "20191113-1"
+  }, 
+  {
+    "ParameterKey": "InstanceTypeParameter",
+    "ParameterValue": "t2.micro"
+  },
+  {
+    "ParameterKey": "mySubnetIDs",
+    "ParameterValue": "subnet-63abb31a"
+  }
+]
