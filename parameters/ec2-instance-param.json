@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "toolKeyPair",
-    "ParameterValue": "20191113-1"
+    "ParameterValue": "12-25-2019-20:11:1577333507"
   }, 
   {
     "ParameterKey": "toolInstanceType",
@@ -9,6 +9,7 @@
   },
   {
     "ParameterKey": "toolSubnetIDs",
-    "ParameterValue": "subnet-63abb31a"
+    "ParameterValue": "subnet-a798f38c"
   }
 ]
+

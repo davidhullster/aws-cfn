@@ -1,0 +1,142 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  toolEC2Instance: 
+    Type: AWS::EC2::Instance
+    Properties: 
+      ImageId: 
+        Fn::FindInMap: 
+          - "RegionMap"
+          - Ref: "AWS::Region"
+          - "AMI"
+      InstanceType:
+        Ref: toolInstanceType
+      KeyName: 
+        Ref: toolKeyPair
+      BlockDeviceMappings:
+      - DeviceName: "/dev/sdm"
+        Ebs: 
+          VolumeType: "io1"
+          Iops: "200"
+          DeleteOnTermination: "false"
+          VolumeSize: "20"
+      - DeviceName: "/dev/sdk"
+        NoDevice: {}
+      SecurityGroups:
+      - !Ref SSHSecurityGroup
+      IamInstanceProfile:
+        !Ref InstanceProfile
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+          sudo yum update -y && sudo yum upgrade -y
+          sudo yum install python37 -y
+          sudo pip3 install flask
+          aws s3 cp s3://devopspro-20191202/app.py .;
+          sudo chmod 755 app.py
+          sudo python3 app.py
+          echo "DONE"
+  SSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: allow connections from specified CIDR ranges
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 70.95.107.162/32
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 70.95.107.162/32
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: ApplicationPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - s3:*
+            Resource: "*"
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+      - Ref: InstanceRole
+  toolELB:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      AvailabilityZones:
+        - us-west-2a
+      Listeners:
+        - LoadBalancerPort: '80'
+          InstancePort: '80'
+          Protocol: HTTP
+  toolELBIngressGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ELB ingress group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          SourceSecurityGroupOwnerId: !GetAtt toolELB.SourceSecurityGroup.OwnerAlias
+          SourceSecurityGroupName: !GetAtt toolELB.SourceSecurityGroup.GroupName
+Parameters:  
+  toolKeyPair: 
+    Description: Amazon EC2 Key Pair
+    Type: "AWS::EC2::KeyPair::KeyName"
+  toolSubnetIDs: 
+    Description: Subnet IDs
+    Type: "List<AWS::EC2::Subnet::Id>"
+  toolInstanceType: 
+    Type: String
+    Default: t2.micro
+    AllowedValues: 
+      - t2.micro
+      - m1.small
+      - m1.large
+    Description: Enter t2.micro, m1.small, or m1.large. Default is t2.micro.    
+Mappings: 
+  RegionMap: 
+    us-east-1: 
+      "AMI": "ami-062f7200baf2fa504"
+    us-west-2: 
+      "AMI": "ami-04590e7389a6e577c"
+Outputs:
+  toolEC2Instance:
+    Description: InstanceId of the newly created EC2 instance
+    Value:
+      Ref: toolEC2Instance
+  AZ:
+    Description: Availability Zone of the newly created EC2 instance
+    Value:
+      Fn::GetAtt:
+      - toolEC2Instance
+      - AvailabilityZone
+  PublicDNS:
+    Description: Public DNSName of the newly created EC2 instance
+    Value:
+      Fn::GetAtt:
+      - toolEC2Instance
+      - PublicDnsName
+  PublicIP:
+    Description: Public IP address of the newly created EC2 instance
+    Value:
+      Fn::GetAtt:
+      - toolEC2Instance
+      - PublicIp
